@@ -30,11 +30,11 @@ namespace dadjokes.Controllers
 		}
 
 		[Route("count")]
-		[HttpPost]
+		[HttpGet]
 		public async Task<ActionResult<Joke>> GetJoke()
 		{
 			var count = await _client.GetJokeCountAsync();
-			return Ok(new DadJokeCountResponse { Count = count });
+			return Ok(new DadJokeCountResponse { Count = count.GetValueOrDefault(0) });
 		}
 	}
 }

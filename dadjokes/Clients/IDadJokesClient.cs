@@ -6,6 +6,6 @@ namespace dadjokes.Clients
 	{
 		Task<Joke?> GetRandomJokeAsync();
 
-		Task<int> GetJokeCountAsync();
+		Task<int?> GetJokeCountAsync();
 	}
 }

@@ -30,17 +30,17 @@ namespace dadjokes.Clients
         public async Task<Joke?> GetRandomJokeAsync()
         {
             var response = await GetGenericClientReponse<DadJokeClientResponse>("/random/joke");
-            return response.Body.FirstOrDefault();
+            return response?.Body.FirstOrDefault();
         }
 
-        public async Task<int> GetJokeCountAsync()
+        public async Task<int?> GetJokeCountAsync()
         {
             var response = await GetGenericClientReponse<DadJokeCountClientResponse>("/joke/count");
-            return response.Body;
+            return response?.Body.GetValueOrDefault(0);
         }
 
 
-		private async Task<T> GetGenericClientReponse<T>(string requestUri)
+		private async Task<T?> GetGenericClientReponse<T>(string requestUri)
 		{
 			var request = new RestRequest($"{_baseUrl+requestUri}", Method.Get);
 			request.AddHeader("X-RapidAPI-Key", _dadJokesKey );
