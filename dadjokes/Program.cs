@@ -4,7 +4,20 @@ using Microsoft.Extensions.Configuration;
 using RestSharp;
 
 var builder = WebApplication.CreateBuilder(args);
+var policy = "AllowSpecificOrigins";
 
+// Add services to the container.
+builder.Services.AddCors(options =>
+{
+	options.AddPolicy(name: policy,
+					  policy =>
+					  {
+						  policy.WithOrigins("http://localhost:4200");
+						  policy.AllowAnyHeader();
+						  policy.AllowAnyMethod();
+					  });
+
+});
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -27,4 +40,5 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
+app.UseCors(policy);
 app.Run();
