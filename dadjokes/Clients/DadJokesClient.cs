@@ -1,6 +1,8 @@
 ﻿using dadjokes.Dtos;
 using dadjokes.Models;
 using Newtonsoft.Json;
+using Polly;
+using Polly.Retry;
 using RestSharp;
 using System.Net;
 using System.Text.Json.Serialization;
@@ -42,28 +44,54 @@ namespace dadjokes.Clients
 
 		private async Task<T?> GetGenericClientReponse<T>(string requestUri)
 		{
-			var request = new RestRequest($"{_baseUrl+requestUri}", Method.Get);
-			request.AddHeader("X-RapidAPI-Key", _dadJokesKey );
-			request.AddHeader("X-RapidAPI-Host", _dadJokesHost);
 
 			try
-			{
-				var response = await _restClient.ExecuteAsync(request);
+			{				
 
-				if (response != null && response.StatusCode == HttpStatusCode.OK)
+				var res = await _GetRetryPolicy().ExecuteAsync(async () =>
 				{
-					string responseContent = response.Content ?? string.Empty;
-					return JsonConvert.DeserializeObject<T>(responseContent);
-				}
-			}
+					var request = new RestRequest($"{_baseUrl + requestUri}", Method.Get);
+					request.AddHeader("X-RapidAPI-Key", _dadJokesKey);
+					request.AddHeader("X-RapidAPI-Host", _dadJokesHost);
 
-			catch (Exception ex)
+					var response = await _restClient.ExecuteAsync(request);
+
+					if (response != null && response.StatusCode == HttpStatusCode.OK)
+					{						
+						return response;
+					}
+					else
+					{
+
+						throw new Exception("Request failed");
+					}
+				});
+
+
+				return JsonConvert.DeserializeObject<T>(res.Content?? string.Empty);
+			}
+			catch(Exception ex)
 			{
-				_logger.Log(LogLevel.Error, ex.Message);
+				_logger.LogError(ex.Message);
 				throw;
 			}
-			return default;
+			
 		}
+
+		private RetryPolicy<RestResponse> _GetRetryPolicy()
+		{
+			var retryPolicy = Policy
+			.Handle<HttpRequestException>()
+			.OrResult<RestResponse>(response => response.StatusCode != HttpStatusCode.OK)
+			.WaitAndRetryAsync(
+				retryCount: 3,
+				sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))
+			);
+
+			return retryPolicy;
+		}
+
+		
 
 
 	}
